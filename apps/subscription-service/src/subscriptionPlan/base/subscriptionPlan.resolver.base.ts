@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { SubscriptionPlan } from "./SubscriptionPlan";
 import { SubscriptionPlanCountArgs } from "./SubscriptionPlanCountArgs";
 import { SubscriptionPlanFindManyArgs } from "./SubscriptionPlanFindManyArgs";
@@ -23,10 +29,20 @@ import { DeleteSubscriptionPlanArgs } from "./DeleteSubscriptionPlanArgs";
 import { SubscriptionFindManyArgs } from "../../subscription/base/SubscriptionFindManyArgs";
 import { Subscription } from "../../subscription/base/Subscription";
 import { SubscriptionPlanService } from "../subscriptionPlan.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => SubscriptionPlan)
 export class SubscriptionPlanResolverBase {
-  constructor(protected readonly service: SubscriptionPlanService) {}
+  constructor(
+    protected readonly service: SubscriptionPlanService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "read",
+    possession: "any",
+  })
   async _subscriptionPlansMeta(
     @graphql.Args() args: SubscriptionPlanCountArgs
   ): Promise<MetaQueryPayload> {
@@ -36,14 +52,26 @@ export class SubscriptionPlanResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [SubscriptionPlan])
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "read",
+    possession: "any",
+  })
   async subscriptionPlans(
     @graphql.Args() args: SubscriptionPlanFindManyArgs
   ): Promise<SubscriptionPlan[]> {
     return this.service.subscriptionPlans(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => SubscriptionPlan, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "read",
+    possession: "own",
+  })
   async subscriptionPlan(
     @graphql.Args() args: SubscriptionPlanFindUniqueArgs
   ): Promise<SubscriptionPlan | null> {
@@ -54,7 +82,13 @@ export class SubscriptionPlanResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => SubscriptionPlan)
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "create",
+    possession: "any",
+  })
   async createSubscriptionPlan(
     @graphql.Args() args: CreateSubscriptionPlanArgs
   ): Promise<SubscriptionPlan> {
@@ -64,7 +98,13 @@ export class SubscriptionPlanResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => SubscriptionPlan)
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "update",
+    possession: "any",
+  })
   async updateSubscriptionPlan(
     @graphql.Args() args: UpdateSubscriptionPlanArgs
   ): Promise<SubscriptionPlan | null> {
@@ -84,6 +124,11 @@ export class SubscriptionPlanResolverBase {
   }
 
   @graphql.Mutation(() => SubscriptionPlan)
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "delete",
+    possession: "any",
+  })
   async deleteSubscriptionPlan(
     @graphql.Args() args: DeleteSubscriptionPlanArgs
   ): Promise<SubscriptionPlan | null> {
@@ -99,7 +144,13 @@ export class SubscriptionPlanResolverBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => [Subscription], { name: "subscriptions" })
+  @nestAccessControl.UseRoles({
+    resource: "Subscription",
+    action: "read",
+    possession: "any",
+  })
   async findSubscriptions(
     @graphql.Parent() parent: SubscriptionPlan,
     @graphql.Args() args: SubscriptionFindManyArgs
