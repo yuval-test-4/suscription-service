@@ -16,7 +16,11 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { SubscriptionPlanService } from "../subscriptionPlan.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { SubscriptionPlanCreateInput } from "./SubscriptionPlanCreateInput";
 import { SubscriptionPlan } from "./SubscriptionPlan";
 import { SubscriptionPlanFindManyArgs } from "./SubscriptionPlanFindManyArgs";
@@ -26,10 +30,24 @@ import { SubscriptionFindManyArgs } from "../../subscription/base/SubscriptionFi
 import { Subscription } from "../../subscription/base/Subscription";
 import { SubscriptionWhereUniqueInput } from "../../subscription/base/SubscriptionWhereUniqueInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class SubscriptionPlanControllerBase {
-  constructor(protected readonly service: SubscriptionPlanService) {}
+  constructor(
+    protected readonly service: SubscriptionPlanService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: SubscriptionPlan })
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createSubscriptionPlan(
     @common.Body() data: SubscriptionPlanCreateInput
   ): Promise<SubscriptionPlan> {
@@ -46,9 +64,18 @@ export class SubscriptionPlanControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [SubscriptionPlan] })
   @ApiNestedQuery(SubscriptionPlanFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async subscriptionPlans(
     @common.Req() request: Request
   ): Promise<SubscriptionPlan[]> {
@@ -66,9 +93,18 @@ export class SubscriptionPlanControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: SubscriptionPlan })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async subscriptionPlan(
     @common.Param() params: SubscriptionPlanWhereUniqueInput
   ): Promise<SubscriptionPlan | null> {
@@ -91,9 +127,18 @@ export class SubscriptionPlanControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: SubscriptionPlan })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateSubscriptionPlan(
     @common.Param() params: SubscriptionPlanWhereUniqueInput,
     @common.Body() data: SubscriptionPlanUpdateInput
@@ -124,6 +169,14 @@ export class SubscriptionPlanControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: SubscriptionPlan })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteSubscriptionPlan(
     @common.Param() params: SubscriptionPlanWhereUniqueInput
   ): Promise<SubscriptionPlan | null> {
@@ -149,8 +202,14 @@ export class SubscriptionPlanControllerBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id/subscriptions")
   @ApiNestedQuery(SubscriptionFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Subscription",
+    action: "read",
+    possession: "any",
+  })
   async findSubscriptions(
     @common.Req() request: Request,
     @common.Param() params: SubscriptionPlanWhereUniqueInput
@@ -189,6 +248,11 @@ export class SubscriptionPlanControllerBase {
   }
 
   @common.Post("/:id/subscriptions")
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "update",
+    possession: "any",
+  })
   async connectSubscriptions(
     @common.Param() params: SubscriptionPlanWhereUniqueInput,
     @common.Body() body: SubscriptionWhereUniqueInput[]
@@ -206,6 +270,11 @@ export class SubscriptionPlanControllerBase {
   }
 
   @common.Patch("/:id/subscriptions")
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "update",
+    possession: "any",
+  })
   async updateSubscriptions(
     @common.Param() params: SubscriptionPlanWhereUniqueInput,
     @common.Body() body: SubscriptionWhereUniqueInput[]
@@ -223,6 +292,11 @@ export class SubscriptionPlanControllerBase {
   }
 
   @common.Delete("/:id/subscriptions")
+  @nestAccessControl.UseRoles({
+    resource: "SubscriptionPlan",
+    action: "update",
+    possession: "any",
+  })
   async disconnectSubscriptions(
     @common.Param() params: SubscriptionPlanWhereUniqueInput,
     @common.Body() body: SubscriptionWhereUniqueInput[]
