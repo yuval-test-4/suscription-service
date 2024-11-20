@@ -18,6 +18,7 @@ import * as gqlACGuard from "../../auth/gqlAC.guard";
 import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
 import * as common from "@nestjs/common";
 import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { Public } from "../../decorators/public.decorator";
 import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { Subscription } from "./Subscription";
 import { SubscriptionCountArgs } from "./SubscriptionCountArgs";
@@ -65,13 +66,8 @@ export class SubscriptionResolverBase {
     return this.service.subscriptions(args);
   }
 
-  @common.UseInterceptors(AclFilterResponseInterceptor)
+  @Public()
   @graphql.Query(() => Subscription, { nullable: true })
-  @nestAccessControl.UseRoles({
-    resource: "Subscription",
-    action: "read",
-    possession: "own",
-  })
   async subscription(
     @graphql.Args() args: SubscriptionFindUniqueArgs
   ): Promise<Subscription | null> {

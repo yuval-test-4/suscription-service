@@ -32,12 +32,6 @@
   {
     "role": "user",
     "resource": "Subscription",
-    "action": "read:own",
-    "attributes": "*"
-  },
-  {
-    "role": "user",
-    "resource": "Subscription",
     "action": "create:any",
     "attributes": "*"
   },
